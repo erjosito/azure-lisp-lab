@@ -17,22 +17,25 @@
             }
         },
         "config": {
-            "defaultValue": [
-                {
-                    "vnetName": "onprem-vnet",
-                    "vnetPrefix": "172.21.101.0/24",
-                    "vmSubnet": "172.21.101.0/26",
-                    "nvaSubnet": "172.21.101.64/26",
-                    "vmName": "onprem-vm",
-                    "nvaName": "onprem-pxtr"
-                },
-            ]
+            "type": "object",
+            "defaultValue": {
+                "value": [
+                    {
+                        "vnetName": "onprem-vnet",
+                        "vnetPrefix": "172.21.101.0/24",
+                        "vmSubnet": "172.21.101.0/26",
+                        "nvaSubnet": "172.21.101.64/26",
+                        "vmName": "onprem-vm",
+                        "nvaName": "onprem-pxtr"
+                    }
+                ]
+            }
         }
     },
     "variables": {
         "networkApiVersion": "2018-08-01",
         "deploymentApiVersion": "2017-05-10",
-        "nvaTemplateUrl": "[uri(deployment().properties.templateLink.uri, 'nvaCSR1kv.json')]",
+        "nvaTemplateUrl": "[uri(deployment().properties.templateLink.uri, 'nvaCSR1kv.json')]"
     },
     "resources": [
 		{
@@ -49,15 +52,15 @@
 				"parameters": {
                     "adminUsername": {"value": "[parameters('adminUsername')]"},
                     "adminPassword": {"value": "[parameters('adminPassword')]"},
-                    "vnetPrefix": {"value": "[parameters('config')[copyIndex()]['vnetPrefix']]"},
-                    "vnetName": {"value": "[parameters('config')[copyIndex()]['vnetName']]"},
+                    "vnetPrefix": {"value": "[parameters('config')['value'][copyIndex()]['vnetPrefix']]"},
+                    "vnetName": {"value": "[parameters('config')['value'][copyIndex()]['vnetName']]"},
                     "subnet1Name": {"value": "nvaSubnet"},
-                    "subnet1Prefix": {"value": "[parameters('config')[copyIndex()]['nvaSubnet']]"},
+                    "subnet1Prefix": {"value": "[parameters('config')['value'][copyIndex()]['nvaSubnet']]"},
                     "subnet1Name": {"value": "vmSubnet"},
-                    "subnet1Prefix": {"value": "[parameters('config')[copyIndex()]['vmSubnet']]"},
-                    "nvaName": {"value": "[parameters('config')[copyIndex()]['nvaName']]"},
+                    "subnet1Prefix": {"value": "[parameters('config')['value'][copyIndex()]['vmSubnet']]"},
+                    "nvaName": {"value": "[parameters('config')['value'][copyIndex()]['nvaName']]"},
                     "nvaSize": "Standard_D2_v2",
-                    "vmName": {"value": "[parameters('config')[copyIndex()]['vmName']]"},
+                    "vmName": {"value": "[parameters('config')['value'][copyIndex()]['vmName']]"},
                     "vmSize": "Standard_B1s"
                 }
             },
