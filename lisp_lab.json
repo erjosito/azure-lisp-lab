@@ -59,9 +59,9 @@
                     "subnet1Name": {"value": "vmSubnet"},
                     "subnet1Prefix": {"value": "[parameters('config')['value'][copyIndex()]['vmSubnet']]"},
                     "nvaName": {"value": "[parameters('config')['value'][copyIndex()]['nvaName']]"},
-                    "nvaSize": "Standard_D2_v2",
+                    "nvaSize": {"value": "Standard_D2_v2"},
                     "vmName": {"value": "[parameters('config')['value'][copyIndex()]['vmName']]"},
-                    "vmSize": "Standard_B1s"
+                    "vmSize": {"value": "Standard_B1s"}
                 }
             },
             "dependsOn": [
