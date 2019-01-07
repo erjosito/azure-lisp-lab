@@ -68,7 +68,7 @@
             ],
             "copy": {
                 "name": "vnetcopy",
-                "count": "[length(parameters('config'))]"
+                "count": "[length(parameters('config')['value'])]"
             }        
         }
     ]

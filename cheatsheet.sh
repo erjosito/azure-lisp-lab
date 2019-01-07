@@ -1,3 +1,4 @@
 # Deploy lab
 az group create -n lisplab -l westeurope
-az group deployment create -g lisplab --template-uri https://raw.githubusercontent.com/erjosito/azure-lisp-lab/master/lisp_lab.json --parameters '{"admin":{"value":"Microsoft123!"}}'
+url=https://raw.githubusercontent.com/erjosito/azure-lisp-lab/master/lisp_lab.json
+az group deployment create -g lisplab --template-uri $url --parameters '{"adminPassword":{"value":"Microsoft123!"}}'
