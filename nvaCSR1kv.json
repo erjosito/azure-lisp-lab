@@ -19,11 +19,11 @@
             "type": "string"
         },
         "subnet2Name": {
-            "defaultValue": "subnet1",
+            "defaultValue": "subnet2",
             "type": "string"
         },
         "subnet2Prefix": {
-            "defaultValue": "192.168.100.0/26",
+            "defaultValue": "192.168.100.64/26",
             "type": "string"
         },
         "nvaName": {
