@@ -21,12 +21,20 @@
             "defaultValue": {
                 "value": [
                     {
-                        "vnetName": "onprem-vnet",
+                        "vnetName": "onprem",
+                        "vnetPrefix": "172.21.0.0/24",
+                        "vmSubnet": "172.21.0.0/26",
+                        "nvaSubnet": "172.21.0.64/26",
+                        "vmName": "onprem-vm",
+                        "nvaName": "onprem-pxtr"
+                    },
+                    {
+                        "vnetName": "azure-vnet1",
                         "vnetPrefix": "172.21.101.0/24",
                         "vmSubnet": "172.21.101.0/26",
                         "nvaSubnet": "172.21.101.64/26",
-                        "vmName": "onprem-vm",
-                        "nvaName": "onprem-pxtr"
+                        "vmName": "azure-vm1",
+                        "nvaName": "azure-pxtr1"
                     }
                 ]
             }

@@ -98,7 +98,11 @@
         "diagnosticsStorageAccountName": "[variables('storageName')]",
         "diagnosticsStorageAccountId": "[variables('storageId')]",
         "diagnosticsStorageAccountType": "Standard_LRS",
-        "diagnosticsStorageAccountKind": "Storage"
+        "diagnosticsStorageAccountKind": "Storage",
+		"customScript": "ubuntuConfig.sh",
+		"thisTemplateUri": "[deployment().properties.templateLink.uri]",
+        "customScriptUri": "[uri(variables('thisTemplateUri'), variables('customScript'))]",
+        "customScriptCmd": "[concat('chmod 666 ', variables('customScript'), ' && /bin/sh ./', variables('customScript'))]"
    },
     "resources": [
         {
@@ -415,7 +419,29 @@
                 }
             },
             "tags": {}
-        }
+        },
+		{
+			"comments": "Create Linux custom extension to install software in the VM",
+			"type": "Microsoft.Compute/virtualMachines/extensions",
+			"name": "[concat(parameters('vmName'), '/installcustomscript')]",
+			"apiVersion": "[variables('computeApiVersion')]",
+			"location": "[resourceGroup().location]",
+			"properties": {
+				"publisher": "Microsoft.Azure.Extensions",
+				"type": "CustomScript",
+				"typeHandlerVersion": "2.0",
+				"autoUpgradeMinorVersion": true,
+				"settings": {
+					"fileUris": [
+						"[variables('customScriptUri')]"
+					],
+					"commandToExecute": "[variables('customScriptCmd')]"
+				}
+			},
+			"dependsOn": [
+				"[parameters('vmName')]"
+			]
+		}
      ],
     "outputs": {
         "adminUsername": {
