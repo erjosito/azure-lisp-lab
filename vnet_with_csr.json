@@ -1,0 +1,72 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "nvaUsr": {
+            "type": "string",
+            "defaultValue": "lab-user",
+            "metadata": {
+                "description": "Password to be configured in the NVA (user is lab-user)"
+            }
+        },
+        "nvaPwd": {
+            "type": "securestring",
+            "defaultValue": null,
+            "metadata": {
+                "description": "Password to be configured in the NVA (user is lab-user)"
+            }
+        },
+        "config": {
+            "defaultValue": [
+                {
+                    "vnetName": "onprem-vnet",
+                    "vnetPrefix": "172.21.101.0/24",
+                    "vmSubnet": "172.21.101.0/26",
+                    "nvaSubnet": "172.21.101.64/26",
+                    "vmName": "onprem-vm",
+                    "nvaName": "onprem-pxtr"
+                },
+            ]
+        }
+    },
+    "variables": {
+        "networkApiVersion": "2018-08-01",
+        "deploymentApiVersion": "2017-05-10",
+        "nvaTemplateUrl": "[uri(deployment().properties.templateLink.uri, 'nvaCSR1kv.json')]",
+    },
+    "resources": [
+		{
+			"comments": "Simulate a branch with a VNET plus an NVA",
+			"name": "branchNva",
+            "type": "Microsoft.Resources/deployments",
+			"apiVersion": "[variables('deploymentApiVersion')]",
+			"properties": {
+				"mode": "Incremental",
+				"templateLink": {
+					"uri": "[variables('nvaTemplateUrl')]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+                    "adminUsername": {"value": "[parameters('nvaUsr')]"},
+                    "adminPassword": {"value": "[parameters('nvaPwd')]"},
+                    "vnetPrefix": {"value": "[parameters('config')[copyIndex()]['vnetPrefix']]"},
+                    "vnetName": {"value": "[parameters('config')[copyIndex()]['vnetName']]"},
+                    "subnet1Name": {"value": "nvaSubnet"},
+                    "subnet1Prefix": {"value": "[parameters('config')[copyIndex()]['nvaSubnet']]"},
+                    "subnet1Name": {"value": "vmSubnet"},
+                    "subnet1Prefix": {"value": "[parameters('config')[copyIndex()]['vmSubnet']]"},
+                    "nvaName": {"value": "[parameters('config')[copyIndex()]['nvaName']]"},
+                    "nvaSize": "Standard_D2_v2",
+                    "vmName": {"value": "[parameters('config')[copyIndex()]['vmName']]"},
+                    "vmSize": "Standard_B1s"
+                }
+            },
+            "dependsOn": [
+            ],
+            "copy": {
+                "name": "vnetcopy",
+                "count": "[length(parameters('config'))]"
+            }        
+        }
+    ]
+}

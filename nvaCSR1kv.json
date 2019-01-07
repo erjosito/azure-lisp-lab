@@ -1,0 +1,426 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "vnetName": {
+            "defaultValue": "myVnet",
+            "type": "string"
+        },
+        "vnetPrefix": {
+            "defaultValue": "192.168.100.0/24",
+            "type": "string"
+        },
+        "subnet1Name": {
+            "defaultValue": "subnet1",
+            "type": "string"
+        },
+        "subnet1Prefix": {
+            "defaultValue": "192.168.100.0/26",
+            "type": "string"
+        },
+        "subnet2Name": {
+            "defaultValue": "subnet1",
+            "type": "string"
+        },
+        "subnet2Prefix": {
+            "defaultValue": "192.168.100.0/26",
+            "type": "string"
+        },
+        "nvaName": {
+            "type": "string",
+            "defaultValue": "myCsr"
+        },
+        "nvaSize": {
+            "type": "string",
+            "defaultValue": "Standard_D2_v2"
+        },
+        "vmName": {
+            "type": "string",
+            "defaultValue": "myVm"
+        },
+        "vmSize": {
+            "type": "string",
+            "defaultValue": "Standard_B1s"
+        },
+        "adminUsername": {
+            "type": "string",
+            "defaultValue": "lab-user"
+        },
+        "adminPassword": {
+            "type": "secureString"
+        }
+    },
+    "variables": {
+        "networkApiVersion": "2018-04-01",
+        "computeApiVersion": "2018-06-01",
+        "storageApiVersion": "2018-07-01",
+        "nvaPipName": "[concat(parameters('nvaName'), '-pip')]",
+        "vmPipName": "[concat(parameters('vmName'), '-pip')]",
+        "pipType": "Dynamic",
+        "pipSku": "Basic",
+        "nvaNicName": "[concat(parameters('nvaName'), '-nic')]",
+        "vmNicName": "[concat(parameters('vmName'), '-nic')]",
+        "nvaNsgName": "[concat(parameters('nvaName'), '-nsg')]",
+        "vmNsgName": "[concat(parameters('vmName'), '-nsg')]",
+        "nsgRules": [
+            {
+                "name": "SSH",
+                "properties": {
+                    "priority": 1010,
+                    "protocol": "TCP",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "sourceApplicationSecurityGroups": [],
+                    "destinationApplicationSecurityGroups": [],
+                    "sourceAddressPrefix": "*",
+                    "sourcePortRange": "*",
+                    "destinationAddressPrefix": "*",
+                    "destinationPortRange": "22"
+                }
+            }
+        ],
+        "nvaNsgId": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('nvaNsgName'))]",
+        "vmNsgId": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('vmNsgName'))]",
+        "vmDiskName": "[concat(parameters('vmName'), '-disk')]",
+		"vmDiskType": "Standard_LRS",
+		"vmOsDiskSize": 32,
+        "nvaOsDiskType": "StandardSSD_LRS",
+        "vnetId": "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', parameters('vnetName'))]",
+        "subnet1Ref": "[concat(variables('vnetId'), '/subnets/', parameters('subnet1Name'))]",
+        "subnet2Ref": "[concat(variables('vnetId'), '/subnets/', parameters('subnet1Name'))]",
+        "autoShutdownStatus": "Enabled",
+        "autoShutdownTime": "19:00",
+        "autoShutdownTimeZone": "UTC",
+        "autoShutdownNotificationStatus": "Disabled",
+        "autoShutdownNotificationLocale": "en",
+        "storageName": "[toLower(concat(uniqueString(resourceGroup().id), 'diag'))]",
+        "storageId": "[resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', variables('storageName'))]",
+        "diagnosticsStorageAccountName": "[variables('storageName')]",
+        "diagnosticsStorageAccountId": "[variables('storageId')]",
+        "diagnosticsStorageAccountType": "Standard_LRS",
+        "diagnosticsStorageAccountKind": "Storage"
+   },
+    "resources": [
+        {
+            "comments": "Create Vnet with two subnets",
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[parameters('vnetName')]",
+            "apiVersion": "[variables('networkApiVersion')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('vnetPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('subnet1Name')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('subnet1Prefix')]"
+                        }
+                    },
+                    {
+                        "name": "[parameters('subnet2Name')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('subnet2Prefix')]"
+                        }
+                    }
+                ]
+            },
+            "resources": [],
+            "dependsOn": []
+        },
+        {
+            "comments": "Storage Account for diagnostics",
+            "name": "[variables('storageName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "[variables('storageApiVersion')]",
+            "location": "[resourceGroup().location]",
+            "properties": {},
+            "kind": "[variables('diagnosticsStorageAccountKind')]",
+            "sku": {
+                "name": "[variables('diagnosticsStorageAccountType')]"
+            },
+            "tags": {}
+        },
+        {
+            "comments": "Crate NIC for CSR",
+            "name": "[variables('nvaNicName')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('networkApiVersion')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[variables('nvaNsgName')]",
+                "[variables('nvaPipName')]",
+                "[parameters('vnetName')]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('subnet1Ref')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('nvaPipName'))]"
+                            }
+                        }
+                    }
+                ],
+                "networkSecurityGroup": {
+                    "id": "[variables('nvaNsgId')]"
+                }
+            },
+            "tags": {}
+        },
+        {
+            "comments": "NSG allowing port 22 for CSR",
+            "name": "[variables('nvaNsgName')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "[variables('networkApiVersion')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules": "[variables('nsgRules')]"
+            },
+            "tags": {}
+        },
+        {
+            "comments": "PIP for the NVA",
+            "name": "[variables('nvaPipName')]",
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "[variables('networkApiVersion')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publicIpAllocationMethod": "[variables('pipType')]"
+            },
+            "sku": {
+                "name": "[variables('pipSku')]"
+            },
+            "tags": {}
+        },
+        {
+            "comments": "Cisco CSR 1000v NVA",
+            "name": "[parameters('vmName')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "[variables('computeApiVersion')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[variables('nvaNicName')]",
+                "[variables('storageName')]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('nvaSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[variables('nvaOsDiskType')]"
+                        }
+                    },
+                    "imageReference": {
+                        "publisher": "cisco",
+                        "offer": "cisco-csr-1000v",
+                        "sku": "16_9-byol",
+                        "version": "16.9.120180924"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nvaNicName'))]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "[parameters('vmName')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]"
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true,
+                        "storageUri": "[concat('https://', variables('diagnosticsStorageAccountName'), '.blob.core.windows.net/')]"
+                    }
+                }
+            },
+            "plan": {
+                "name": "16_9-byol",
+                "publisher": "cisco",
+                "product": "cisco-csr-1000v"
+            },
+            "tags": {}
+        },
+        {
+            "comments": "Shutdown schedule for CSR",
+            "name": "[concat('shutdown-computevm-', parameters('nvaName'))]",
+            "type": "Microsoft.DevTestLab/schedules",
+            "apiVersion": "2017-04-26-preview",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', parameters('nvaName'))]"
+            ],
+            "properties": {
+                "status": "[variables('autoShutdownStatus')]",
+                "taskType": "ComputeVmShutdownTask",
+                "dailyRecurrence": {
+                    "time": "[variables('autoShutdownTime')]"
+                },
+                "timeZoneId": "[variables('autoShutdownTimeZone')]",
+                "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines', parameters('nvaName'))]",
+                "notificationSettings": {
+                    "status": "[variables('autoShutdownNotificationStatus')]",
+                    "notificationLocale": "[variables('autoShutdownNotificationLocale')]",
+                    "timeInMinutes": "30"
+                }
+            },
+            "tags": {}
+        },
+        {
+            "comments": "Crate NIC for VM",
+            "name": "[variables('vmNicName')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "[variables('networkApiVersion')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[variables('vmNsgName')]",
+                "[variables('vmPipName')]",
+                "[parameters('vnetName')]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('subnet2Ref')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('vmPipName'))]"
+                            }
+                        }
+                    }
+                ],
+                "networkSecurityGroup": {
+                    "id": "[variables('vmNsgId')]"
+                }
+            },
+            "tags": {}
+        },
+        {
+            "comments": "NSG allowing port 22 for VM",
+            "name": "[variables('vmNsgName')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "[variables('networkApiVersion')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules": "[variables('nsgRules')]"
+            },
+            "tags": {}
+        },
+        {
+            "comments": "PIP for the VM",
+            "name": "[variables('vmPipName')]",
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "[variables('networkApiVersion')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publicIpAllocationMethod": "[variables('pipType')]"
+            },
+            "sku": {
+                "name": "[variables('pipSku')]"
+            },
+            "tags": {}
+        },
+        {
+            "comments": "Deploy Linux VM",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[parameters('vmName')]",
+            "apiVersion": "[variables('computeApiVersion')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "18.04-LTS",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Linux",
+                        "caching": "ReadWrite",
+                        "name": "[variables('vmDiskName')]",
+                        "diskSizeGb": "[variables('vmOsDiskSize')]",
+                        "createOption": "FromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[variables('vmDiskType')]"
+                        }
+                        },
+                    "dataDisks": []
+                },
+                "osProfile": {
+                    "computerName": "[parameters('vmName')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false
+                    },
+                    "secrets": [],
+                    "adminPassword": "[parameters('adminPassword')]"
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('vmNicName'))]",
+                            "properties": {
+                                "primary": true
+                            }
+                        }
+                    ]
+                }
+            },
+            "resources": [],
+            "dependsOn": [
+                "[variables('vmNicName')]"
+            ]
+        },   
+        {
+            "comments": "Shutdown schedule for VM",
+            "name": "[concat('shutdown-computevm-', parameters('vmName'))]",
+            "type": "Microsoft.DevTestLab/schedules",
+            "apiVersion": "2017-04-26-preview",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
+            ],
+            "properties": {
+                "status": "[variables('autoShutdownStatus')]",
+                "taskType": "ComputeVmShutdownTask",
+                "dailyRecurrence": {
+                    "time": "[variables('autoShutdownTime')]"
+                },
+                "timeZoneId": "[variables('autoShutdownTimeZone')]",
+                "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]",
+                "notificationSettings": {
+                    "status": "[variables('autoShutdownNotificationStatus')]",
+                    "notificationLocale": "[variables('autoShutdownNotificationLocale')]",
+                    "timeInMinutes": "30"
+                }
+            },
+            "tags": {}
+        }
+     ],
+    "outputs": {
+        "adminUsername": {
+            "type": "string",
+            "value": "[parameters('adminUsername')]"
+        }
+    }
+}
