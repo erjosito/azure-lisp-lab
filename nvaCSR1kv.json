@@ -62,7 +62,7 @@
         "vmNicName": "[concat(parameters('vmName'), '-nic')]",
         "nvaNsgName": "[concat(parameters('nvaName'), '-nsg')]",
         "vmNsgName": "[concat(parameters('vmName'), '-nsg')]",
-        "nsgRules": [
+        "nvaNsgRules": [
             {
                 "name": "SSH",
                 "properties": {
@@ -76,6 +76,38 @@
                     "sourcePortRange": "*",
                     "destinationAddressPrefix": "*",
                     "destinationPortRange": "22"
+                }
+            }
+        ],
+        "vmNsgRules": [
+            {
+                "name": "SSH",
+                "properties": {
+                    "priority": 1010,
+                    "protocol": "TCP",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "sourceApplicationSecurityGroups": [],
+                    "destinationApplicationSecurityGroups": [],
+                    "sourceAddressPrefix": "*",
+                    "sourcePortRange": "*",
+                    "destinationAddressPrefix": "*",
+                    "destinationPortRange": "22"
+                }
+            },
+            {
+                "name": "HTTP",
+                "properties": {
+                    "priority": 1020,
+                    "protocol": "TCP",
+                    "access": "Allow",
+                    "direction": "Inbound",
+                    "sourceApplicationSecurityGroups": [],
+                    "destinationApplicationSecurityGroups": [],
+                    "sourceAddressPrefix": "*",
+                    "sourcePortRange": "*",
+                    "destinationAddressPrefix": "*",
+                    "destinationPortRange": "80"
                 }
             }
         ],
@@ -187,7 +219,7 @@
             "apiVersion": "[variables('networkApiVersion')]",
             "location": "[resourceGroup().location]",
             "properties": {
-                "securityRules": "[variables('nsgRules')]"
+                "securityRules": "[variables('nvaNsgRules')]"
             },
             "tags": {}
         },
@@ -323,7 +355,7 @@
             "apiVersion": "[variables('networkApiVersion')]",
             "location": "[resourceGroup().location]",
             "properties": {
-                "securityRules": "[variables('nsgRules')]"
+                "securityRules": "[variables('vmNsgRules')]"
             },
             "tags": {}
         },

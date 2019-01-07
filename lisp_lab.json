@@ -19,7 +19,7 @@
         "config": {
             "type": "object",
             "defaultValue": {
-                "value": [
+                "vnets": [
                     {
                         "vnetName": "onprem",
                         "vnetPrefix": "172.21.0.0/24",
@@ -47,8 +47,8 @@
     },
     "resources": [
 		{
-			"comments": "Simulate a branch with a VNET plus an NVA",
-			"name": "branchNva",
+			"comments": "Simulate a number of vnets, each including two subnets, an Ubuntu VM and a CSR 1Kv NVA",
+			"name": "[concat('vnet', copyIndex(1))]",
             "type": "Microsoft.Resources/deployments",
 			"apiVersion": "[variables('deploymentApiVersion')]",
 			"properties": {
@@ -60,15 +60,15 @@
 				"parameters": {
                     "adminUsername": {"value": "[parameters('adminUsername')]"},
                     "adminPassword": {"value": "[parameters('adminPassword')]"},
-                    "vnetPrefix": {"value": "[parameters('config')['value'][copyIndex()]['vnetPrefix']]"},
-                    "vnetName": {"value": "[parameters('config')['value'][copyIndex()]['vnetName']]"},
+                    "vnetPrefix": {"value": "[parameters('config')['vnets'][copyIndex()]['vnetPrefix']]"},
+                    "vnetName": {"value": "[parameters('config')['vnets'][copyIndex()]['vnetName']]"},
                     "subnet1Name": {"value": "nvaSubnet"},
-                    "subnet1Prefix": {"value": "[parameters('config')['value'][copyIndex()]['nvaSubnet']]"},
+                    "subnet1Prefix": {"value": "[parameters('config')['vnets'][copyIndex()]['nvaSubnet']]"},
                     "subnet2Name": {"value": "vmSubnet"},
-                    "subnet2Prefix": {"value": "[parameters('config')['value'][copyIndex()]['vmSubnet']]"},
-                    "nvaName": {"value": "[parameters('config')['value'][copyIndex()]['nvaName']]"},
+                    "subnet2Prefix": {"value": "[parameters('config')['vnets'][copyIndex()]['vmSubnet']]"},
+                    "nvaName": {"value": "[parameters('config')['vnets'][copyIndex()]['nvaName']]"},
                     "nvaSize": {"value": "Standard_D2_v2"},
-                    "vmName": {"value": "[parameters('config')['value'][copyIndex()]['vmName']]"},
+                    "vmName": {"value": "[parameters('config')['vnets'][copyIndex()]['vmName']]"},
                     "vmSize": {"value": "Standard_B1s"}
                 }
             },
@@ -76,7 +76,7 @@
             ],
             "copy": {
                 "name": "vnetcopy",
-                "count": "[length(parameters('config')['value'])]"
+                "count": "[length(parameters('config')['vnets'])]"
             }        
         }
     ]
