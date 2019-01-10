@@ -55,9 +55,11 @@
         "computeApiVersion": "2018-06-01",
         "storageApiVersion": "2018-07-01",
         "nvaPipName": "[concat(parameters('nvaName'), '-pip')]",
+        "nvaPipType": "Dynamic",
+        "nvaPipSku": "Static",
         "vmPipName": "[concat(parameters('vmName'), '-pip')]",
-        "pipType": "Dynamic",
-        "pipSku": "Basic",
+        "vmPipType": "Dynamic",
+        "vmPipSku": "Basic",
         "nvaNicName": "[concat(parameters('nvaName'), '-nic')]",
         "vmNicName": "[concat(parameters('vmName'), '-nic')]",
         "nvaNsgName": "[concat(parameters('nvaName'), '-nsg')]",
@@ -230,10 +232,10 @@
             "apiVersion": "[variables('networkApiVersion')]",
             "location": "[resourceGroup().location]",
             "properties": {
-                "publicIpAllocationMethod": "[variables('pipType')]"
+                "publicIpAllocationMethod": "[variables('nvaPipType')]"
             },
             "sku": {
-                "name": "[variables('pipSku')]"
+                "name": "[variables('nvaPipSku')]"
             },
             "tags": {}
         },
@@ -360,16 +362,16 @@
             "tags": {}
         },
         {
-            "comments": "PIP for the VM",
+            "comments": "PIP for the Ubuntu VM",
             "name": "[variables('vmPipName')]",
             "type": "Microsoft.Network/publicIpAddresses",
             "apiVersion": "[variables('networkApiVersion')]",
             "location": "[resourceGroup().location]",
             "properties": {
-                "publicIpAllocationMethod": "[variables('pipType')]"
+                "publicIpAllocationMethod": "[variables('vmPipType')]"
             },
             "sku": {
-                "name": "[variables('pipSku')]"
+                "name": "[variables('vmPipSku')]"
             },
             "tags": {}
         },
